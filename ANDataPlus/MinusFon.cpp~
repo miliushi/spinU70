@@ -1,0 +1,200 @@
+#include <TROOT.h>
+#include <TApplication.h>
+#include <TCanvas.h>
+#include <TGCanvas.h>
+#include <TStyle.h>
+#include <TFormula.h>
+#include <TBrowser.h>
+#include <TGraph.h>
+#include <TF1.h>
+#include <TH1F.h>
+#include <TBuffer.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <TFile.h>
+#include <TMath.h>
+#include <TAxis.h>
+#include <TGraphErrors.h>
+#include <iostream>
+#include <sstream> 
+#include <string> 
+
+#define MYSIZE 1000
+#define N 20
+const int MAXBUF=60000;
+
+
+
+Int_t num = 0; 
+Int_t numP = 0;
+Int_t particle = 0;
+//const Int_t numP=12;
+char c, par1[N];
+char dfname[MYSIZE];
+char momY[3];
+
+char rootname15[10] = "26015;1";
+char rootname16[10] = "26016;1";
+char rootname17[10] = "26017;1";
+char rootresult15[20]="test15.root";
+char rootresult16[20]="test16.root";
+char rootresult17[20]="test17.root";
+char rootDATA[20]="DATA.root";
+
+double y(unsigned short b1,unsigned short b2);
+
+Double_t minX,   maxX;
+Int_t    minBIN, maxBIN;
+
+
+
+
+int main(int argc, char ** argv)
+{
+  FILE *data_file;
+  int flopen, s, ss, n;
+
+  unsigned short length;
+  unsigned short buf[MAXBUF];
+  int recL,rec=0;
+
+
+  ssize_t res;
+  char *cbuf;
+  double y8[1000],y1[1000],y2[1000],y3[1000],
+  y4[1000],y5[1000],y6[1000],y7[1000];
+  double tot1, tot2, tot3, tot4, tot5, tot6, tot7, tot8;
+
+
+  printf("argc=%d EXE=%s\n",argc,argv[0]);          //Opening file with list of files
+  if(argc>1){
+    printf("File= %s ",argv[1]);
+    data_file=fopen(argv[1], "r");
+    if (data_file>0) { 
+      printf(" opened succefully\n");
+    }
+    else {
+      printf(" can't open\n ");
+      exit(1);
+    }
+  }
+  else {
+    printf("File not found\n");
+    exit(1);
+  }
+  printf("\n");
+
+
+
+
+//********************************************************************************************************** 
+
+                                  
+  while(fgets(dfname,MYSIZE,data_file)!= NULL){                   //Opening file of list
+
+    int ss = 0;
+    int n = 0;
+    int dataread;
+
+    num++;
+
+    for(s=0;s<MYSIZE;s++){
+      c = dfname[s];
+      if( c==' ') break;
+    }
+    if(c=='|') {s=s-1;}
+
+
+    if(s<MYSIZE){
+      dfname[s]=0;
+      printf("File = %s",dfname);
+      printf("\n");
+      dataread=open(dfname,O_RDONLY);
+
+      if(dataread>0){
+        printf(" opened succesfully\n");
+
+      }
+      else{
+        printf("can't open\n");
+        continue; 
+      }
+    }
+    printf("\n");
+
+    while((res=read(dataread,&length,sizeof(length)))>0){
+      if(res == 0) {
+        printf("EOF has been read at record# %d\n",rec);
+        close(dataread);
+        return 0;
+      } else if(res == -1) {
+         printf("Read error at record# %d\n",rec);
+         //perror(dataread);
+        } else {
+         rec++;
+         if(MAXBUF<length){
+    	     printf("Error: MAXBUF<length");
+    	     close(dataread);
+    	     return 0;
+         }
+         res = read(dataread,buf,(length-1)*2);
+         if(res > 0) {  
+           if(buf[0]==0x4553){
+             recL=0;
+             while(recL<length-2){
+               if(buf[2+recL]==0x5653){
+                 y1[n]=y(buf[recL+3],buf[recL+4]);
+    	         y2[n]=y(buf[recL+5],buf[recL+6]);
+    	         y3[n]=y(buf[recL+7],buf[recL+8]);
+    	         y4[n]=y(buf[recL+9],buf[recL+10]);
+    	         y5[n]=y(buf[recL+11],buf[recL+12]);
+    	         y6[n]=y(buf[recL+13],buf[recL+14]);
+                 y7[n]=y(buf[recL+15],buf[recL+16]);
+    	         y8[n]=y(buf[recL+17],buf[recL+18]);
+                 tot1+=y1[n];
+                 tot2+=y2[n];
+                 tot3+=y3[n];
+                 tot4+=y4[n];
+                 tot5+=y5[n];
+                 tot6+=y6[n];
+                 tot7+=y7[n];
+                 tot8+=y8[n];
+               }
+               recL+=buf[1+recL]; 
+             }
+           }
+
+      } else if (res == -1) {
+         printf("Read error at record# %d\n",rec);
+         close(dataread);
+      } else {
+         printf("EOF has been read at record# %d\n",rec);
+         close(dataread);
+      }
+    }
+  } 
+
+  printf("Terehov=%10.0f\n",tot1);
+
+  
+
+  }
+
+
+return 0;
+}
+
+double y(unsigned short b1,unsigned short b2){
+	double u=	b1&0x000F+10*((b1&0x00F0)>>4)+
+	   100*((b1&0x0F00)>>8)+1000*((b1&0xF000)>>12)+
+	   10000*(b2&0x000F)+100000*((b2&0x00F0)>>4)+
+	   1000000*((b2&0x0F00)>>8)+10000000*((b2&0xF000)>>12);
+	return u;
+}
+
+
+

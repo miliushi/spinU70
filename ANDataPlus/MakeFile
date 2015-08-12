@@ -1,0 +1,17 @@
+CFLAGS=`root-config --cflags --glibs --ldflags  --libs`
+all:	main
+main:	p2shunt.o rMomentum.o  Terehof.o rTarget.o MinusFon.o 
+	g++ p2shunt.o rMomentum.o rTarget.o MinusFon.o Terehof.o -o main $(CFLAGS)
+Terehof.o:	src/Terehof.cpp
+	g++ src/Terehof.cpp -c -o Terehof.o $(CFLAGS)
+p2shunt.o:	src/p2shunt.c
+	g++ src/p2shunt.c -c -o p2shunt.o $(CFLAGS)
+rMomentum.o:	src/rMomentum.cpp
+	g++ src/rMomentum.cpp -c -o rMomentum.o $(CFLAGS)
+rTarget.o:	src/rTarget.cpp
+	g++ src/rTarget.cpp -c -o rTarget.o $(CFLAGS)
+MinusFon.o:	src/MinusFon.c
+	g++ src/MinusFon.c  -c -o MinusFon.o $(CFLAGS)
+clean:
+	rm -rf *.o main
+

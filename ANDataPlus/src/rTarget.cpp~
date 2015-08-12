@@ -1,0 +1,173 @@
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <TFile.h>
+
+#include "p2shunt.h"
+
+const int MAXBUF=60000;
+#define MYSIZE 1000
+
+
+int rTarget(char * filenameM, int rTargetFlag){
+  int recL,rec=0;
+  unsigned short length;
+  unsigned short buf[MAXBUF];
+  FILE* data_fileM;
+  int flopen, s, ss, n;
+  char c;
+  int TargetNum;
+  int TargetFilter;
+  int datareadM;
+
+  ssize_t res;
+  char *cbuf;
+  float *m;
+  float P1;
+
+  char dfnameM[MYSIZE];
+
+  
+  bool FlagTarget=true;
+  bool FlagMomentum=true;
+
+  cbuf = (char*)buf;
+
+    data_fileM=fopen(filenameM, "r");
+    if (data_fileM>0) { 
+      printf(" opened succefully\n");
+    }
+    else {
+      printf(" can't open\n ");
+      exit(1);
+    }
+
+  printf("\n");
+
+  while(fgets(dfnameM,MYSIZE,data_fileM)!= NULL){                   //Opening file of list
+
+    int ss = 0;
+    int n = 0;
+
+
+
+
+    for(s=0;s<MYSIZE;s++){
+      c = dfnameM[s];
+      if( c==' ') break;
+    }
+    if(c=='|') {s=s-1;}
+
+
+    if(s<MYSIZE){
+      dfnameM[s]=0;
+      printf("File = %s",dfnameM);
+      printf("\n");
+      datareadM=open(dfnameM,O_RDONLY);
+
+      if(datareadM>0){
+        printf(" opened succesfully\n");
+
+      }
+      else{
+        printf("can't open\n");
+        continue; 
+      }
+    }
+    printf("\n");
+
+  while((res=read(datareadM,&length,sizeof(length)))>0){ 
+    if(res == 0) {
+      printf("EOF has been read at record# %d\n",rec);
+      close(datareadM);
+      return 0;
+    } else if(res == -1) {
+       printf("Read error at record# %d\n",rec);
+    } else {
+       rec++;
+       if(MAXBUF<length){
+    	   printf("Error: MAXBUF<length");
+    	   close(datareadM);
+    	   return 0;
+       }
+       res = read(datareadM,buf,(length-1)*2);
+       if(res > 0) {
+         if(buf[0]==0x5343){
+           recL=0;
+           while(recL<length-2){ 
+
+             //--------------print TARGET---------------------------------------
+             if(buf[2+recL]==0x5753 && FlagTarget==true){             
+               for(int i=0;i<buf[1+recL];i++){  
+                  printf("%c",cbuf[6+recL*2+i]);
+               }
+               printf("\n");
+                 
+                 TargetNum=(cbuf[6+recL*2+12])-'0';
+                 printf("TargetNum=%d\n",TargetNum);
+                 TargetFilter=(cbuf[6+recL*2+10])-'0';
+                 printf("TargetFilter=%d\n",TargetFilter);
+               FlagTarget=false;         
+    	     }
+             //------------------------------------------------------------------
+
+    	     recL+=buf[1+recL];
+           }               
+    	 }
+      } else if (res == -1) {
+         printf("Read error at record# %d\n",rec);
+         close(datareadM);
+      } else {
+         printf("EOF has been read at record# %d\n",rec);
+         close(datareadM);
+      }
+    }
+  }
+ }
+ close(datareadM);
+ if(FlagTarget==true) {
+   int prN = 30;
+   char print0[prN];    char *print00;
+   char print1[prN];    char *print01;
+   char print2[prN];    char *print02;
+   char print3[prN];    char *print03;
+   char print4[prN];    char *print04;
+   char print5[prN];    char *print05;
+   char print6[prN];    char *print06;
+
+
+   print00=strstr(dfnameM,"Al");            strncpy(print0, print00, 2);
+   print01=strstr(dfnameM,"Cu");            strncpy(print1, print01, 2);
+   print02=strstr(dfnameM,"W");             strncpy(print2, print02, 1);
+   print03=strstr(dfnameM,"no_tgt");        strncpy(print3, print03, 6);
+   print04=strstr(dfnameM,"PE");            strncpy(print4, print04, 2); printf(print4); printf("\n");
+   print05=strstr(dfnameM,"C");             strncpy(print5, print05, 1); printf(print5); printf("\n");
+   print06=strstr(dfnameM,"background");    strncpy(print6, print06, 10); print6[10]= ' '; printf( print6); printf("\n");
+
+
+
+   if(print6=="background") {TargetFilter=1;}
+   else {TargetFilter=0;}
+
+   if(print0=="Al")                              {TargetNum=0;}
+   else if(print1=="Cu")                         {TargetNum=1;}
+        else if(print2=="W")                     {TargetNum=2;}
+             else if(print3=="no_tgt")           {TargetNum=3;}
+                  else if(print4=="PE")          {TargetNum=4;}
+                       else if(print5=="C")      {TargetNum=5;}
+                            else { printf("ERROR: name file\n"); return 10;}
+ }
+
+ if(rTargetFlag==0) {return TargetFilter;}
+ else if(rTargetFlag==1) {return TargetNum;}
+      else {printf("Error in rTargetFlag\n"); return 10;}
+
+}
+
+
+
+

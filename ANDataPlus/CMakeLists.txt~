@@ -1,0 +1,33 @@
+#----------------------------------------------------------------------------
+# Setup the project
+cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+project(ANData)
+
+
+#----------------------------------------------------------------------------
+# Setup Geant4 include directories and compile definitions
+# Setup include directory for this project
+#
+
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(/usr/local/include/root/)
+
+#set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/root_v5.30/lib/root)
+set( ROOTPREFIX /usr/local/lib/root/)
+
+
+# Locate sources and headers for this project
+# NB: headers are included so they will show up in IDEs
+#
+file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.c)
+file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.h)
+file(GLOB headers /usr/local/root/include/*.h)
+
+#----------------------------------------------------------------------------
+# Add the executable, and link it to the Geant4 libraries
+#
+add_executable(main src/MinusFon.c ${sources} ${headers})
+target_link_libraries(main ${ROOT_LIBRARIES})
+
+
